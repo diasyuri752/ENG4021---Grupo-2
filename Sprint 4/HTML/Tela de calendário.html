@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendário</title>
+</head>
+<body>
+
+  <h2>Calendário</h2>
+
+  <p>
+    <button id="prevBtn">&lt;</button>
+    <button id="monthBtn"></button>
+    <button id="yearBtn"></button>
+    <button id="nextBtn">&gt;</button>
+  </p>
+
+  <div id="monthPicker" style="display:none;">
+    <p><strong>Selecionar mês:</strong></p>
+    <div id="monthGrid"></div>
+    <hr />
+  </div>
+
+  <table border="1" id="calTable">
+    <thead>
+      <tr>
+        <th>Dom</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th>Sáb</th>
+      </tr>
+    </thead>
+    <tbody id="calBody"></tbody>
+  </table>
+
+  <p id="selectedDisplay">Nenhuma data selecionada</p>
+
+  <script>
+    const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const MONTHS_SHORT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    const today = new Date();
+    let cur = { year: today.getFullYear(), month: today.getMonth() };
+    let selected = null;
+    let monthPickerOpen = false;
+
+    const $ = id => document.getElementById(id);
+
+    function render() {
+      $('monthBtn').textContent = MONTHS[cur.month];
+      $('yearBtn').textContent = cur.year;
+
+      const firstDay = new Date(cur.year, cur.month, 1).getDay();
+      const daysInMonth = new Date(cur.year, cur.month + 1, 0).getDate();
+      const daysInPrev = new Date(cur.year, cur.month, 0).getDate();
+
+      const tbody = $('calBody');
+      tbody.innerHTML = '';
+
+      let cells = [];
+
+      for (let i = 0; i < firstDay; i++) {
+        cells.push({ label: daysInPrev - firstDay + 1 + i, type: 'other' });
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const isToday = d === today.getDate() && cur.month === today.getMonth() && cur.year === today.getFullYear();
+        const isSel = selected && selected.d === d && selected.m === cur.month && selected.y === cur.year;
+        cells.push({ label: d, type: 'current', isToday, isSel });
+      }
+      const remain = cells.length % 7 === 0 ? 0 : 7 - (cells.length % 7);
+      for (let d = 1; d <= remain; d++) {
+        cells.push({ label: d, type: 'other' });
+      }
+
+      for (let i = 0; i < cells.length; i += 7) {
+        const tr = document.createElement('tr');
+        for (let j = i; j < i + 7; j++) {
+          const c = cells[j];
+          const td = document.createElement('td');
+          if (c.type === 'other') {
+            td.style.color = 'gray';
+            td.textContent = c.label;
+          } else {
+            if (c.isSel) {
+              td.textContent = '[' + c.label + ']';
+            } else if (c.isToday) {
+              td.textContent = '*' + c.label + '*';
+            } else {
+              td.textContent = c.label;
+            }
+            const day = c.label;
+            td.style.cursor = 'pointer';
+            td.addEventListener('click', () => {
+              selected = { d: day, m: cur.month, y: cur.year };
+              render();
+            });
+          }
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+
+      const disp = $('selectedDisplay');
+      if (selected) {
+        disp.textContent = 'Data selecionada: ' + selected.d + ' de ' + MONTHS[selected.m] + ' de ' + selected.y;
+      } else {
+        disp.textContent = 'Nenhuma data selecionada';
+      }
+
+      renderMonthPicker();
+    }
+
+    function renderMonthPicker() {
+      const mg = $('monthGrid');
+      mg.innerHTML = '';
+      MONTHS_SHORT.forEach((m, i) => {
+        const btn = document.createElement('button');
+        btn.textContent = (i === cur.month ? '[' + m + ']' : m);
+        btn.addEventListener('click', () => {
+          cur.month = i;
+          monthPickerOpen = false;
+          $('monthPicker').style.display = 'none';
+          render();
+        });
+        mg.appendChild(btn);
+        mg.appendChild(document.createTextNode(' '));
+      });
+    }
+
+    $('monthBtn').addEventListener('click', () => {
+      monthPickerOpen = !monthPickerOpen;
+      $('monthPicker').style.display = monthPickerOpen ? 'block' : 'none';
+    });
+
+    $('yearBtn').addEventListener('click', () => {
+      const y = prompt('Digite o ano:', cur.year);
+      const parsed = parseInt(y);
+      if (!isNaN(parsed) && parsed >= 1900 && parsed <= 2200) {
+        cur.year = parsed;
+        render();
+      }
+    });
+
+    $('prevBtn').addEventListener('click', () => {
+      cur.month--;
+      if (cur.month < 0) { cur.month = 11; cur.year--; }
+      render();
+    });
+
+    $('nextBtn').addEventListener('click', () => {
+      cur.month++;
+      if (cur.month > 11) { cur.month = 0; cur.year++; }
+      render();
+    });
+
+    render();
+  </script>
+
+</body>
+</html>
